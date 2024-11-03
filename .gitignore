@@ -1,0 +1,13 @@
+# Editor Settings
+.vscode
+.vs
+
+# Compiled Dynamic libraries
+*.so
+
+# Python
+__pycache__
+
+# Others
+assets/
+src/main.cpp
