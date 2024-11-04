@@ -1,0 +1,7 @@
+numpy==2.1.1
+opencv-python==4.10.0.84
+pip==22.3.1
+pybind11==2.13.6
+pytest==7.4.4
+python-dev-tools==2023.3.24
+scipy==1.14.1
