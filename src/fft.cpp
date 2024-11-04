@@ -6,6 +6,8 @@
 
 namespace py = pybind11;
 
+const double eps = 1e-4;
+
 vector<Complex> fft1d(vector<Complex> &input) {
     int n = input.size();
     if (n == 1) {
@@ -39,6 +41,17 @@ vector<Complex> fft1d(vector<Complex> &input) {
         result[i + n / 2] = even_result[i] - omega * odd_result[i];
         omega *= omega_n;
     }
+
+    // Set to 0 for small values
+    for (int i = 0; i < n; i++) {
+        if (abs(result[i].real()) < eps) {
+            result[i] = Complex(0, result[i].imag());
+        }
+        if (abs(result[i].imag()) < eps) {
+            result[i] = Complex(result[i].real(), 0);
+        }
+    }
+
     return result;
 }
 
@@ -74,6 +87,16 @@ vector<Complex> ifft1d(vector<Complex> &input, bool root) {
     if (root) {
         for (int i = 0; i < n; i++) {
             result[i] /= n;
+        }
+    }
+
+    // Set to 0 for small values
+    for (int i = 0; i < n; i++) {
+        if (abs(result[i].real()) < eps) {
+            result[i] = Complex(0, result[i].imag());
+        }
+        if (abs(result[i].imag()) < eps) {
+            result[i] = Complex(result[i].real(), 0);
         }
     }
 
@@ -204,7 +227,7 @@ PYBIND11_MODULE(fft, m) {
     m.doc() = "Fast Fourier Transform"; // optional module docstring
 
     m.def("fft1d", &fft1d, "Fast Fourier Transform for 1D signal.");
-    m.def("ifft1d", &ifft1d, "Inverse Fast Fourier Transform for 1D signal.");
+    m.def("ifft1d", &ifft1d, py::arg("input"), py::arg("root")=true, "Inverse Fast Fourier Transform for 1D signal.");
     m.def("fft2d", &fft2d, "Fast Fourier Transform for 2D signal.");
     m.def("ifft2d", &ifft2d, "Inverse Fast Fourier Transform for 2D signal.");
     m.def("fftconvolve2d", &fftconvolve2d, "2D convolution using FFT.");
