@@ -33,7 +33,7 @@ vector<Complex> fft1d(vector<Complex> &input) {
 
     // Merge
     vector<Complex> result(n);
-    double angle = 2 * M_PI / n;
+    double angle = -2 * M_PI / n;
     Complex omega(1, 0), omega_n(cos(angle), sin(angle));
 
     for (int i = 0; i < n / 2; i++) {
@@ -76,7 +76,6 @@ vector<Complex> ifft1d(vector<Complex> &input, bool root) {
     vector<Complex> result(n);
     double angle = 2 * M_PI / n;
     Complex omega(1, 0), omega_n(cos(angle), sin(angle));
-    omega_n = 1.0 / omega_n;
 
     for (int i = 0; i < n / 2; i++) {
         result[i] = even_result[i] + omega * odd_result[i];
@@ -169,12 +168,14 @@ vector<vector<Complex>> ifft2d(vector<vector<Complex>> &input) {
 
 vector<vector<double>> fftconvolve2d(vector<vector<double>> &input, vector<vector<double>> &kernel) {
     int n = input.size(), m = input[0].size();
+    int n_kernel = kernel.size(), m_kernel = kernel[0].size();
     if (n & (n - 1) || m & (m - 1)) {
         throw std::invalid_argument("The size of input should be power of 2.");
     }
 
-    // Let the size of kernel be the same as input
-    kernel = paddingKernel(kernel, n, m);
+    // Preprocess the kernel
+    kernel = paddingKernel(kernel, n, m);  // Padding zero to make the size of kernel to be the same as input
+    kernel = roll2d(kernel, -n_kernel / 2, -m_kernel / 2);  // Roll the kernel to the center
 
     // Represent input and kernel as complex number
     vector<vector<Complex>> input_complex(n, vector<Complex>(m));
@@ -218,6 +219,17 @@ vector<vector<double>> paddingKernel(vector<vector<double>> &kernel, int n, int 
     for (int i = 0; i < n_kernel; i++) {
         for (int j = 0; j < m_kernel; j++) {
             result[i][j] = kernel[i][j];
+        }
+    }
+    return result;
+}
+
+vector<vector<double>> roll2d(vector<vector<double>> &input, int shift_x, int shift_y) {
+    int n = input.size(), m = input[0].size();
+    vector<vector<double>> result(n, vector<double>(m));
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < m; j++) {
+            result[(i + shift_x + n) % n][(j + shift_y + m) % m] = input[i][j];
         }
     }
     return result;
