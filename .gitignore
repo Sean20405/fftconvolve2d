@@ -9,5 +9,6 @@
 __pycache__
 
 # Others
-assets/
+assets/*
+!assets/performance_conv.txt
 src/main.cpp
