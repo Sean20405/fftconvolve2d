@@ -6,17 +6,17 @@ OUTPUT := fft$(shell python3-config --extension-suffix)
 
 .PHONY: default
 default: $(OUTPUT)
-$(OUTPUT): src/fft.cpp
+$(OUTPUT): src/fft.cpp src/fft.hpp pocketfft.o
 	$(CXX) $(CXX_FLAGS) $(INCLUDE_FLAGS) $^ -o $(OUTPUT) $(LD_FLAGS)
+	rm -f pocketfft.o
+
+.PHONY: pocketfft.o
+pocketfft.o: src/pocketfft/pocketfft.c
+	gcc -c src/pocketfft/pocketfft.c -o pocketfft.o
 
 .PHONY: test
-test: tests/test_*.py $(OUTPUT)
+test: tests/test_*.py 
 	python -m pytest tests/
-
-.PHONY: t_cpp
-t_cpp: src/main.cpp src/fft.cpp
-	$(CXX) -Ofast -Wall -std=c++11 $^ -o main
-	./main
 
 .PHONY: clean
 clean:

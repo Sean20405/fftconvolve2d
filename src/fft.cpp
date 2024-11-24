@@ -9,95 +9,53 @@ namespace py = pybind11;
 const double eps = 1e-4;
 
 vector<Complex> fft1d(vector<Complex> &input) {
-    int n = input.size();
-    if (n == 1) {
-        return input;
+    cfft_plan plan = make_cfft_plan(input.size());
+
+    // Convert input to double array that can be used in pocketfft
+    double *data = new double[2 * input.size()];
+    for (size_t i = 0; i < input.size(); i++) {
+        data[2 * i] = input[i].real();
+        data[2 * i + 1] = input[i].imag();
     }
 
-    // padding zero to make the size of input to be power of 2
-    while (n & (n - 1)) {
-        input.emplace_back(0);
-        n++;
+    // Compute FFT
+    cfft_forward(plan, data, 1.0);
+
+    // Convert the result to Complex array
+    vector<Complex> result(input.size());
+    for (size_t i = 0; i < input.size(); i++) {
+        result[i] = Complex(data[2 * i], data[2 * i + 1]);
     }
 
-    // Divide into even and odd function
-    vector<Complex> even(n / 2), odd(n / 2);
-    for (int i = 0; i < n / 2; i++) {
-        even[i] = input[i * 2];
-        odd[i] = input[i * 2 + 1];
-    }
-    
-    // Recursively compute FFT
-    vector<Complex> even_result = fft1d(even);
-    vector<Complex> odd_result = fft1d(odd);
-
-    // Merge
-    vector<Complex> result(n);
-    double angle = -2 * M_PI / n;
-    Complex omega(1, 0), omega_n(cos(angle), sin(angle));
-
-    for (int i = 0; i < n / 2; i++) {
-        result[i] = even_result[i] + omega * odd_result[i];
-        result[i + n / 2] = even_result[i] - omega * odd_result[i];
-        omega *= omega_n;
-    }
-
-    // Set to 0 for small values
-    for (int i = 0; i < n; i++) {
-        if (abs(result[i].real()) < eps) {
-            result[i] = Complex(0, result[i].imag());
-        }
-        if (abs(result[i].imag()) < eps) {
-            result[i] = Complex(result[i].real(), 0);
-        }
-    }
+    // Free memory
+    delete[] data;
+    destroy_cfft_plan(plan);
 
     return result;
 }
 
-vector<Complex> ifft1d(vector<Complex> &input, bool root) {
-    int n = input.size();
-    if (n == 1) {
-        return input;
+vector<Complex> ifft1d(vector<Complex> &input) {
+    cfft_plan plan = make_cfft_plan(input.size());
+
+    // Convert input to double array that can be used in pocketfft
+    double *data = new double[2 * input.size()];
+    for (size_t i = 0; i < input.size(); i++) {
+        data[2 * i] = input[i].real();
+        data[2 * i + 1] = input[i].imag();
     }
 
-    // Divide into even and odd function
-    vector<Complex> even(n / 2), odd(n / 2);
-    for (int i = 0; i < n / 2; i++) {
-        even[i] = input[i * 2];
-        odd[i] = input[i * 2 + 1];
+    // Compute inverse FFT
+    cfft_backward(plan, data, 1.0/input.size());
+
+    // Convert the result to Complex array
+    vector<Complex> result(input.size());
+    for (size_t i = 0; i < input.size(); i++) {
+        result[i] = Complex(data[2 * i], data[2 * i + 1]);
     }
 
-    // Recursively compute FFT
-    vector<Complex> even_result = ifft1d(even, false);
-    vector<Complex> odd_result = ifft1d(odd, false);
-
-    // Merge
-    vector<Complex> result(n);
-    double angle = 2 * M_PI / n;
-    Complex omega(1, 0), omega_n(cos(angle), sin(angle));
-
-    for (int i = 0; i < n / 2; i++) {
-        result[i] = even_result[i] + omega * odd_result[i];
-        result[i + n / 2] = even_result[i] - omega * odd_result[i];
-        omega *= omega_n;
-    }
-
-    if (root) {
-        for (int i = 0; i < n; i++) {
-            result[i] /= n;
-        }
-    }
-
-    // Set to 0 for small values
-    for (int i = 0; i < n; i++) {
-        if (abs(result[i].real()) < eps) {
-            result[i] = Complex(0, result[i].imag());
-        }
-        if (abs(result[i].imag()) < eps) {
-            result[i] = Complex(result[i].real(), 0);
-        }
-    }
+    // Free memory
+    delete[] data;
+    destroy_cfft_plan(plan);
 
     return result;
 }
@@ -106,18 +64,6 @@ vector<Complex> ifft1d(vector<Complex> &input, bool root) {
 vector<vector<Complex>> fft2d(vector<vector<Complex>> &input) {
     int n = input.size();
     int m = input[0].size();
-
-    // Padding zero to make the size of input to be power of 2
-    while (m & (m - 1)) {
-        for (int i = 0; i < n; i++) {
-            input[i].emplace_back(0);
-        }
-        m++;
-    }
-    while (n & (n - 1)) {
-        input.emplace_back(vector<Complex>(m, 0));
-        n++;
-    }
 
     vector<vector<Complex>> result(n, vector<Complex>(m));
 
@@ -169,9 +115,6 @@ vector<vector<Complex>> ifft2d(vector<vector<Complex>> &input) {
 vector<vector<double>> fftconvolve2d(vector<vector<double>> &input, vector<vector<double>> &kernel) {
     int n = input.size(), m = input[0].size();
     int n_kernel = kernel.size(), m_kernel = kernel[0].size();
-    if (n & (n - 1) || m & (m - 1)) {
-        throw std::invalid_argument("The size of input should be power of 2.");
-    }
 
     // Preprocess the kernel
     kernel = paddingKernel(kernel, n, m);  // Padding zero to make the size of kernel to be the same as input
@@ -239,7 +182,7 @@ PYBIND11_MODULE(fft, m) {
     m.doc() = "Fast Fourier Transform"; // optional module docstring
 
     m.def("fft1d", &fft1d, "Fast Fourier Transform for 1D signal.");
-    m.def("ifft1d", &ifft1d, py::arg("input"), py::arg("root")=true, "Inverse Fast Fourier Transform for 1D signal.");
+    m.def("ifft1d", &ifft1d, "Inverse Fast Fourier Transform for 1D signal.");
     m.def("fft2d", &fft2d, "Fast Fourier Transform for 2D signal.");
     m.def("ifft2d", &ifft2d, "Inverse Fast Fourier Transform for 2D signal.");
     m.def("fftconvolve2d", &fftconvolve2d, "2D convolution using FFT.");
