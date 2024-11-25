@@ -16,7 +16,7 @@ def test_conv_speed():
     with open(filename, 'w') as f:
         print("====== Running convolution speed test ======")
 
-        header = f"{'image size':<15} {'kernel size':<15} {'fft':<15} {'scipy':<15} {'speedup':<15}"
+        header = f"{'image size':<15} {'kernel size':<15} {'fft':<15} {'scipy':<15} {'scipy fft':<15} {'speedup':<15}"
         print(header)
         f.write(header + "\n")
 
@@ -33,9 +33,13 @@ def test_conv_speed():
                 result_scipy = scipy.signal.convolve2d(img, kernel, mode='same')
                 time_scipy = time.time() - start_scipy
 
-                speedup = time_scipy / time_fft
+                speedup_scipy = time_scipy / time_fft
+
+                start_scipy_fft = time.time()
+                result_scipy_fft = scipy.signal.fftconvolve(img, kernel, mode='same')
+                time_scipy_fft = time.time() - start_scipy_fft
                 
-                output = f"{img_size}x{img_size:<12} {kernel_size}x{kernel_size:<12} {time_fft:<15.6f} {time_scipy:<15.6f} {speedup:<15.6f}"
+                output = f"{img_size}x{img_size:<12} {kernel_size}x{kernel_size:<12} {time_fft:<15.6f} {time_scipy:<15.6f} {time_scipy_fft:<15.6f} {speedup_scipy:<15.6f}"
                 print(output)
                 f.write(output + "\n")
 
