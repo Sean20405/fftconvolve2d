@@ -11,4 +11,6 @@ __pycache__
 # Others
 assets/*
 !assets/performance_conv.txt
+!assets/output.png
+!assets/output_scipy.png
 src/main.cpp
