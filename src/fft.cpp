@@ -4,130 +4,64 @@
 # include <pybind11/operators.h>
 # include <pybind11/complex.h>
 
+# include <sys/time.h>
+
 namespace py = pybind11;
 
-const double eps = 1e-4;
-
-vector<Complex> fft1d(vector<Complex> &input) {
-    cfft_plan plan = make_cfft_plan(input.size());
-
-    // Convert input to double array that can be used in pocketfft
-    double *data = new double[2 * input.size()];
-    for (size_t i = 0; i < input.size(); i++) {
-        data[2 * i] = input[i].real();
-        data[2 * i + 1] = input[i].imag();
-    }
-
-    // Compute FFT
-    cfft_forward(plan, data, 1.0);
-
-    // Convert the result to Complex array
-    vector<Complex> result(input.size());
-    for (size_t i = 0; i < input.size(); i++) {
-        result[i] = Complex(data[2 * i], data[2 * i + 1]);
-    }
-
-    // Free memory
-    delete[] data;
-    destroy_cfft_plan(plan);
-
-    return result;
+// Choose which FFT implementation to use
+vector<Complex> fft1d(vector<Complex> &input, string method) {
+    if (method == "mixed_radix") return MixedRadixFFT::fft1d(input);
+    else if (method == "cooley_tukey") return CooleyTukeyFFT::fft1d(input); 
+    else throw invalid_argument("Invalid method");
 }
 
-vector<Complex> ifft1d(vector<Complex> &input) {
-    cfft_plan plan = make_cfft_plan(input.size());
+vector<Complex> ifft1d(vector<Complex> &input, string method) {
+    if (method == "mixed_radix") return MixedRadixFFT::ifft1d(input);
+    else if (method == "cooley_tukey") return CooleyTukeyFFT::ifft1d(input); 
+    else throw invalid_argument("Invalid method");
 
-    // Convert input to double array that can be used in pocketfft
-    double *data = new double[2 * input.size()];
-    for (size_t i = 0; i < input.size(); i++) {
-        data[2 * i] = input[i].real();
-        data[2 * i + 1] = input[i].imag();
-    }
-
-    // Compute inverse FFT
-    cfft_backward(plan, data, 1.0/input.size());
-
-    // Convert the result to Complex array
-    vector<Complex> result(input.size());
-    for (size_t i = 0; i < input.size(); i++) {
-        result[i] = Complex(data[2 * i], data[2 * i + 1]);
-    }
-
-    // Free memory
-    delete[] data;
-    destroy_cfft_plan(plan);
-
-    return result;
 }
 
-// 2D FFT
-vector<vector<Complex>> fft2d(vector<vector<Complex>> &input) {
-    int n = input.size();
-    int m = input[0].size();
+vector<vector<Complex>> fft2d(vector<vector<Complex>> &input, string method) {
+    if (method == "mixed_radix") return MixedRadixFFT::fft2d(input);
+    else if (method == "cooley_tukey") return CooleyTukeyFFT::fft2d(input); 
+    else throw invalid_argument("Invalid method");
 
-    vector<vector<Complex>> result(n, vector<Complex>(m));
+}
+vector<vector<Complex>> ifft2d(vector<vector<Complex>> &input, string method) {
+    if (method == "mixed_radix") return MixedRadixFFT::ifft2d(input);
+    else if (method == "cooley_tukey") return CooleyTukeyFFT::ifft2d(input); 
+    else throw invalid_argument("Invalid method");
 
-    // FFT for each row  TODO: bottleneck
-    for (int i = 0; i < n; i++) {
-        result[i] = fft1d(input[i]);
-    }
-
-    // FFT for each column  TODO: bottleneck
-    for (int i = 0; i < m; i++) {
-        vector<Complex> column(n);
-        for (int j = 0; j < n; j++) {
-            column[j] = result[j][i];
-        }
-        column = fft1d(column);
-        for (int j = 0; j < n; j++) {
-            result[j][i] = column[j];
-        }
-    }
-
-    return result;
 }
 
-vector<vector<Complex>> ifft2d(vector<vector<Complex>> &input) {
-    int n = input.size();
-    int m = input[0].size();
-    vector<vector<Complex>> result(n, vector<Complex>(m));
+vector<vector<double>> fftconvolve2d(vector<vector<double>> &input, vector<vector<double>> &kernel, string method) {
+    struct timeval start, end, start2, end2;
 
-    // FFT for each row
-    for (int i = 0; i < n; i++) {
-        result[i] = ifft1d(input[i]);
-    }
-
-    // FFT for each column
-    for (int i = 0; i < m; i++) {
-        vector<Complex> column(n);
-        for (int j = 0; j < n; j++) {
-            column[j] = result[j][i];
-        }
-        column = ifft1d(column);
-        for (int j = 0; j < n; j++) {
-            result[j][i] = column[j];
-        }
-    }
-
-    return result;
-}
-
-vector<vector<double>> fftconvolve2d(vector<vector<double>> &input, vector<vector<double>> &kernel) {
     int n = input.size(), m = input[0].size();
     int n_kernel = kernel.size(), m_kernel = kernel[0].size();
-    int output_n = n + n_kernel - 1, output_m = m + m_kernel - 1;
 
     // Preprocess the image and kernel
     cout << "Preprocessing the image and kernel" << endl;
-    paddingInput(input, output_n, output_m);  // Padding zero to make the size of input to be the same as kernel
-    paddingKernel(kernel, output_n, output_m);  // Padding zero to make the size of kernel to be the same as input
+    cout << "    Padding to faster size";
+    gettimeofday(&start2, 0);
+    int n_fast = *lower_bound(fastSize.begin(), fastSize.end(), n + n_kernel - 1), m_fast = *lower_bound(fastSize.begin(), fastSize.end(), m + m_kernel - 1);
+    paddingInput(input, n_fast, m_fast);
+    gettimeofday(&end2, 0);
+    cout << " - " << (end2.tv_sec - start2.tv_sec) + (end2.tv_usec - start2.tv_usec) / 1e6 << "s" << endl;
+
+    cout << "    Padding kernel";
+    gettimeofday(&start2, 0);
+    paddingKernel(kernel, n_fast, m_fast);  // Padding zero to make the size of kernel to be the same as input
+    gettimeofday(&end2, 0);
+    cout << " - " << (end2.tv_sec - start2.tv_sec) + (end2.tv_usec - start2.tv_usec) / 1e6 << "s" << endl;
     kernel = roll2d(kernel, -n_kernel / 2, -m_kernel / 2);  // Roll the kernel to the center
 
     // Represent input and kernel as complex number
-    vector<vector<Complex>> input_complex(output_n, vector<Complex>(output_m));
-    vector<vector<Complex>> kernel_complex(output_n, vector<Complex>(output_m));
-    for (int i = 0; i < output_n; i++) {
-        for (int j = 0; j < output_m; j++) {
+    vector<vector<Complex>> input_complex(n_fast, vector<Complex>(m_fast));
+    vector<vector<Complex>> kernel_complex(n_fast, vector<Complex>(m_fast));
+    for (int i = 0; i < n_fast; i++) {
+        for (int j = 0; j < m_fast; j++) {
             input_complex[i][j] = input[i][j];
             kernel_complex[i][j] = kernel[i][j];
         }
@@ -135,39 +69,56 @@ vector<vector<double>> fftconvolve2d(vector<vector<double>> &input, vector<vecto
 
     // Compute FFT for input and kernel
     cout << "Computing FFT for input and kernel" << endl;
-    vector<vector<Complex>> input_fft = fft2d(input_complex);
-    vector<vector<Complex>> kernel_fft = fft2d(kernel_complex);
+    gettimeofday(&start, 0);
+    vector<vector<Complex>> input_fft = fft2d(input_complex, method);
+    vector<vector<Complex>> kernel_fft = fft2d(kernel_complex, method);
+    gettimeofday(&end, 0);
+    cout << " > " << (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1e6 << "s" << endl;
 
     // Compute the convolution in frequency domain (multiplication)
-    cout << "Computing the convolution in frequency domain" << endl;
-    vector<vector<Complex>> result(output_n, vector<Complex>(output_m));
-    for (int i = 0; i < output_n; i++) {
-        for (int j = 0; j < output_m; j++) {
+    cout << "Computing the convolution in frequency domain";
+    gettimeofday(&start, 0);
+    vector<vector<Complex>> result(n_fast, vector<Complex>(m_fast));
+    for (int i = 0; i < n_fast; i++) {
+        for (int j = 0; j < m_fast; j++) {
             result[i][j] = input_fft[i][j] * kernel_fft[i][j];
         }
     }
+    gettimeofday(&end, 0);
+    cout << " - " << (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1e6 << "s" << endl;
 
     // Compute the inverse FFT
     cout << "Computing the inverse FFT" << endl;
-    vector<vector<Complex>> result_complex = ifft2d(result);
+    gettimeofday(&start, 0);
+    vector<vector<Complex>> result_complex = ifft2d(result, method);
+    gettimeofday(&end, 0);
+    cout << " > " << (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1e6 << "s" << endl;
 
     // Calculate the magnitude of the result
-    cout << "Calculating the magnitude of the result" << endl;
-    vector<vector<double>> result_magnitude(output_n, vector<double>(output_m));
-    for (int i = 0; i < output_n; i++) {
-        for (int j = 0; j < output_m; j++) {
+    cout << "Calculating the magnitude of the result";
+    gettimeofday(&start, 0);
+    vector<vector<double>> result_magnitude(n_fast, vector<double>(m_fast));
+    for (int i = 0; i < n_fast; i++) {
+        for (int j = 0; j < m_fast; j++) {
             result_magnitude[i][j] = abs(result_complex[i][j]);
         }
     }
+    gettimeofday(&end, 0);
+    cout << " - " << (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1e6 << "s" << endl;
 
     // Crop the center of the result
-    cout << "Cropping the center of the result" << endl << endl;
+    cout << "Cropping the center of the result";
+    gettimeofday(&start, 0);
     vector<vector<double>> result_magnitude_cropped(n, vector<double>(m));
+    int n_padding_size = (n_fast - n) / 2, m_padding_size = (m_fast - m) / 2;
     for (int i = 0; i < n; i++) {
         for (int j = 0; j < m; j++) {
-            result_magnitude_cropped[i][j] = result_magnitude[i + n_kernel / 2][j + m_kernel / 2];
+            result_magnitude_cropped[i][j] = result_magnitude[i + n_padding_size][j + m_padding_size];
         }
     }
+    gettimeofday(&end, 0);
+    cout << " - " << (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1e6 << "s" << endl << endl;
+
     // return result_magnitude;
     return result_magnitude_cropped;
 }
@@ -216,10 +167,15 @@ void paddingInput(vector<vector<double>> &input, int n, int m) {
 PYBIND11_MODULE(fft, m) {
     m.doc() = "Fast Fourier Transform"; // optional module docstring
 
-    m.def("fft1d", &fft1d, "Fast Fourier Transform for 1D signal.");
-    m.def("ifft1d", &ifft1d, "Inverse Fast Fourier Transform for 1D signal.");
-    m.def("fft2d", &fft2d, "Fast Fourier Transform for 2D signal.");
-    m.def("ifft2d", &ifft2d, "Inverse Fast Fourier Transform for 2D signal.");
-    m.def("fftconvolve2d", &fftconvolve2d, "2D convolution using FFT.");
+    m.def("fft1d", &fft1d, "Fast Fourier Transform for 1D signal.",
+        py::arg("input"), py::arg("method")="mixed_radix");
+    m.def("ifft1d", &ifft1d, "Inverse Fast Fourier Transform for 1D signal.",
+        py::arg("input"), py::arg("method")="mixed_radix");
+    m.def("fft2d", &fft2d, "Fast Fourier Transform for 2D signal.",
+        py::arg("input"), py::arg("method")="mixed_radix");
+    m.def("ifft2d", &ifft2d, "Inverse Fast Fourier Transform for 2D signal.",
+        py::arg("input"), py::arg("method")="mixed_radix");
+    m.def("fftconvolve2d", &fftconvolve2d, "2D convolution using FFT.",
+        py::arg("input"), py::arg("kernel"), py::arg("method")="mixed_radix");
     m.def("paddingInput", &paddingInput, "Padding zero at the surrounding of the input until the size of input is n x m.");
 }
