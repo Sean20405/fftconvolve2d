@@ -16,6 +16,7 @@ public:
     static vector<Complex> ifft1d(vector<Complex> &input, bool root=true);
     static vector<vector<Complex>> fft2d(vector<vector<Complex>> &input);
     static vector<vector<Complex>> ifft2d(vector<vector<Complex>> &input);
+    static vector<int> fast_size;
 };
 
 class MixedRadixFFT {
@@ -24,4 +25,5 @@ public:
     static vector<Complex> ifft1d(vector<Complex> &input);
     static vector<vector<Complex>> fft2d(vector<vector<Complex>> &input);
     static vector<vector<Complex>> ifft2d(vector<vector<Complex>> &input);
+    static vector<int> fast_size;
 };

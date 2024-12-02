@@ -40,13 +40,14 @@ vector<vector<double>> fftconvolve2d(vector<vector<double>> &input, vector<vecto
 
     int n = input.size(), m = input[0].size();
     int n_kernel = kernel.size(), m_kernel = kernel[0].size();
+    int n_fast, m_fast;
 
     // Preprocess the image and kernel
     cout << "Preprocessing the image and kernel" << endl;
     cout << "    Padding to faster size";
     gettimeofday(&start2, 0);
-    int n_fast = *lower_bound(fastSize.begin(), fastSize.end(), n + n_kernel - 1), m_fast = *lower_bound(fastSize.begin(), fastSize.end(), m + m_kernel - 1);
-    paddingInput(input, n_fast, m_fast);
+    // int n_fast = *lower_bound(fastSize.begin(), fastSize.end(), n + n_kernel - 1), m_fast = *lower_bound(fastSize.begin(), fastSize.end(), m + m_kernel - 1);
+    std::tie(n_fast, m_fast) = paddingInput(input, n + n_kernel, m + m_kernel, method);
     gettimeofday(&end2, 0);
     cout << " - " << (end2.tv_sec - start2.tv_sec) + (end2.tv_usec - start2.tv_usec) / 1e6 << "s" << endl;
 
@@ -123,6 +124,7 @@ vector<vector<double>> fftconvolve2d(vector<vector<double>> &input, vector<vecto
     return result_magnitude_cropped;
 }
 
+
 void paddingKernel(vector<vector<double>> &kernel, int n, int m) {
     int n_kernel = kernel.size();
     
@@ -131,6 +133,7 @@ void paddingKernel(vector<vector<double>> &kernel, int n, int m) {
     
     return;
 }
+
 
 vector<vector<double>> roll2d(vector<vector<double>> &input, int shift_x, int shift_y) {
     int n = input.size(), m = input[0].size();
@@ -143,26 +146,58 @@ vector<vector<double>> roll2d(vector<vector<double>> &input, int shift_x, int sh
     return result;
 }
 
-// Padding zero at the surrounding of the input until the size of input is n x m
-void paddingInput(vector<vector<double>> &input, int n, int m) {
-    int n_input = input.size(), m_input = input[0].size();
-    int n_padding_size = (n - n_input) / 2, m_padding_size = (m - m_input) / 2;
 
+/* Pad zeros around the input to the smallest value in fast_size that is greater than or equal to the input size
+   n, m: the size considering the padding of kernel, but not fast_size */
+pair<int, int> paddingInput(vector<vector<double>> &input, int n, int m, string &method) {
+    struct timeval start, end;
+    int n_input = input.size(), m_input = input[0].size();
+    int n_fast, m_fast;
+    int n_padding_size, m_padding_size;
+
+    // Find the smallest value in fast_size that is greater than or equal to n and m
+    gettimeofday(&start, 0);
+    if (method == "mixed_radix") {
+        n_fast = *lower_bound(MixedRadixFFT::fast_size.begin(), MixedRadixFFT::fast_size.end(), n);
+        m_fast = *lower_bound(MixedRadixFFT::fast_size.begin(), MixedRadixFFT::fast_size.end(), m);
+    }
+    else if (method == "cooley_tukey") {
+        n_fast = *lower_bound(CooleyTukeyFFT::fast_size.begin(), CooleyTukeyFFT::fast_size.end(), n);
+        m_fast = *lower_bound(CooleyTukeyFFT::fast_size.begin(), CooleyTukeyFFT::fast_size.end(), m);
+    }
+    else throw invalid_argument("Invalid method");  // This may be checked before calling this function
+    gettimeofday(&end, 0);
+    cout << "         Choose method - " << (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1e6 << "s" << endl;
+
+    n_padding_size = (n_fast - n_input) / 2, m_padding_size = (m_fast - m_input) / 2;
+
+    // Padding rows  TODO: bottleneck
+    gettimeofday(&start, 0);
     for (int i=0; i<n_input; i++) {
-        input[i].resize(m);
+        input[i].resize(m_fast);
         for (int j=0; j<m_padding_size; j++) {
             input[i].insert(input[i].begin(), 0);
             input[i].push_back(0);
         }
     }
+    gettimeofday(&end, 0);
+    cout << "         Padding rows - " << (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1e6 << "s" << endl;
 
-    input.resize(n, vector<double>(m));
+    // Padding columns
+    gettimeofday(&start, 0);
+    input.resize(n_fast, vector<double>(m_fast));
     for (int i=0; i<n_padding_size; i++) {
-        vector<double> padding(m, 0);
+        vector<double> padding(m_fast, 0);
         input.insert(input.begin(), padding);
         input.push_back(padding);
     }
+    gettimeofday(&end, 0);
+    cout << "         Padding columns - " << (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1e6 << "s" << endl;
+    cout << "         Padding to size" << n_fast << "x" << m_fast << endl;
+
+    return make_pair(n_fast, m_fast);
 }
+
 
 PYBIND11_MODULE(fft, m) {
     m.doc() = "Fast Fourier Transform"; // optional module docstring
