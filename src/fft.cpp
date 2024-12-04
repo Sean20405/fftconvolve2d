@@ -49,7 +49,7 @@ vector<vector<double>> fftconvolve2d(vector<vector<double>> &input, vector<vecto
     // int n_fast = *lower_bound(fastSize.begin(), fastSize.end(), n + n_kernel - 1), m_fast = *lower_bound(fastSize.begin(), fastSize.end(), m + m_kernel - 1);
     std::tie(n_fast, m_fast) = paddingInput(input, n + n_kernel, m + m_kernel, method);
     gettimeofday(&end2, 0);
-    cout << " - " << (end2.tv_sec - start2.tv_sec) + (end2.tv_usec - start2.tv_usec) / 1e6 << "s" << endl;
+    cout << "    > " << (end2.tv_sec - start2.tv_sec) + (end2.tv_usec - start2.tv_usec) / 1e6 << "s" << endl;
 
     cout << "    Padding kernel";
     gettimeofday(&start2, 0);
@@ -167,7 +167,7 @@ pair<int, int> paddingInput(vector<vector<double>> &input, int n, int m, string 
     }
     else throw invalid_argument("Invalid method");  // This may be checked before calling this function
     gettimeofday(&end, 0);
-    cout << "         Choose method - " << (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1e6 << "s" << endl;
+    cout << endl << "        Choose method - " << (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1e6 << "s" << endl;
 
     n_padding_size = (n_fast - n_input) / 2, m_padding_size = (m_fast - m_input) / 2;
 
@@ -181,7 +181,7 @@ pair<int, int> paddingInput(vector<vector<double>> &input, int n, int m, string 
         }
     }
     gettimeofday(&end, 0);
-    cout << "         Padding rows - " << (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1e6 << "s" << endl;
+    cout << "        Padding rows - " << (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1e6 << "s" << endl;
 
     // Padding columns
     gettimeofday(&start, 0);
@@ -192,8 +192,8 @@ pair<int, int> paddingInput(vector<vector<double>> &input, int n, int m, string 
         input.push_back(padding);
     }
     gettimeofday(&end, 0);
-    cout << "         Padding columns - " << (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1e6 << "s" << endl;
-    cout << "         Padding to size" << n_fast << "x" << m_fast << endl;
+    cout << "        Padding columns - " << (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1e6 << "s" << endl;
+    cout << "        Padding to size " << n_fast << "x" << m_fast << endl;
 
     return make_pair(n_fast, m_fast);
 }
