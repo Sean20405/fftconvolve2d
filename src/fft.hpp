@@ -15,7 +15,8 @@ vector<Complex> ifft1d(vector<Complex> &input, string method="mixed_radix");
 vector<vector<Complex>> fft2d(vector<vector<Complex>> &input, string method="mixed_radix");
 vector<vector<Complex>> ifft2d(vector<vector<Complex>> &input, string method="mixed_radix");
 
-vector<vector<double>> fftconvolve2d(vector<vector<double>> &input, vector<vector<double>> &kernel, string method="mixed_radix");
+vector<vector<double>> fftconvolve2d(vector<vector<double>> &input, vector<vector<double>> &kernel, string method="mixed_radix", string mode="full");
 void paddingKernel(vector<vector<double>> &kernel, int n, int m);
 vector<vector<double>> roll2d(vector<vector<double>> &input, int shift_x, int shift_y);
 pair<int, int> paddingInput(vector<vector<double>> &input, int n, int m, string &method);
+void cropOutput(vector<vector<double>> &input, int n, int m, int n_kernel, int m_kernel, int n_fast, int m_fast, string mode);

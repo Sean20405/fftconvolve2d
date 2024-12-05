@@ -35,7 +35,7 @@ vector<vector<Complex>> ifft2d(vector<vector<Complex>> &input, string method) {
 
 }
 
-vector<vector<double>> fftconvolve2d(vector<vector<double>> &input, vector<vector<double>> &kernel, string method) {
+vector<vector<double>> fftconvolve2d(vector<vector<double>> &input, vector<vector<double>> &kernel, string method, string mode) {
     struct timeval start, end, start2, end2;
 
     int n = input.size(), m = input[0].size();
@@ -46,7 +46,6 @@ vector<vector<double>> fftconvolve2d(vector<vector<double>> &input, vector<vecto
     cout << "Preprocessing the image and kernel" << endl;
     cout << "    Padding to faster size";
     gettimeofday(&start2, 0);
-    // int n_fast = *lower_bound(fastSize.begin(), fastSize.end(), n + n_kernel - 1), m_fast = *lower_bound(fastSize.begin(), fastSize.end(), m + m_kernel - 1);
     std::tie(n_fast, m_fast) = paddingInput(input, n + n_kernel, m + m_kernel, method);
     gettimeofday(&end2, 0);
     cout << "    > " << (end2.tv_sec - start2.tv_sec) + (end2.tv_usec - start2.tv_usec) / 1e6 << "s" << endl;
@@ -108,20 +107,13 @@ vector<vector<double>> fftconvolve2d(vector<vector<double>> &input, vector<vecto
     cout << " - " << (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1e6 << "s" << endl;
 
     // Crop the center of the result
-    cout << "Cropping the center of the result";
+    cout << "Cropping according to the given mode";
     gettimeofday(&start, 0);
-    vector<vector<double>> result_magnitude_cropped(n, vector<double>(m));
-    int n_padding_size = (n_fast - n) / 2, m_padding_size = (m_fast - m) / 2;
-    for (int i = 0; i < n; i++) {
-        for (int j = 0; j < m; j++) {
-            result_magnitude_cropped[i][j] = result_magnitude[i + n_padding_size][j + m_padding_size];
-        }
-    }
+    cropOutput(result_magnitude, n, m, n_kernel, m_kernel, n_fast, m_fast, mode);
     gettimeofday(&end, 0);
     cout << " - " << (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1e6 << "s" << endl << endl;
 
-    // return result_magnitude;
-    return result_magnitude_cropped;
+    return result_magnitude;
 }
 
 
@@ -198,6 +190,54 @@ pair<int, int> paddingInput(vector<vector<double>> &input, int n, int m, string 
     return make_pair(n_fast, m_fast);
 }
 
+/* Recover from padding to fast size. Also crop input according to given mode */
+void cropOutput(vector<vector<double>> &input, int n, int m, int n_kernel, int m_kernel, int n_fast, int m_fast, string mode) {
+    int n_kernel_padding_thk = n_kernel / 2, m_kernel_padding_thk = m_kernel / 2;  // Padding thickness about kernel
+    int n_fast_padding_thk = (n_fast - (n + n_kernel_padding_thk * 2)) / 2, m_fast_padding_thk = (m_fast - (m + m_kernel_padding_thk * 2)) / 2;  // Padding thickness for fast size
+    
+    // Recover from padding to fast size
+    for (int i = 0; i < n + n_kernel_padding_thk * 2; i++) {
+        for (int j = 0; j < m + m_kernel_padding_thk * 2; j++) {
+            input[i][j] = input[i + n_fast_padding_thk][j + m_fast_padding_thk];
+        }
+    }
+
+    // Crop image
+    if (mode == "full") {
+        input.resize(n + n_kernel_padding_thk * 2);
+        for (int i = 0; i < n + n_kernel_padding_thk * 2; i++) {
+            input[i].resize(m + m_kernel_padding_thk * 2);
+        }
+    }
+    else if (mode == "same") {
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < m; j++) {
+                input[i][j] = input[i + n_kernel_padding_thk][j + m_kernel_padding_thk];
+            }
+        }
+
+        input.resize(n);
+        for (int i = 0; i < n; i++) {
+            input[i].resize(m);
+        }
+    }
+    else if (mode == "valid") {
+        for (int i = 0; i < n - n_kernel_padding_thk * 2; i++) {
+            for (int j = 0; j < m - m_kernel_padding_thk * 2; j++) {
+                input[i][j] = input[i + 2 * n_kernel_padding_thk][j + 2 * m_kernel_padding_thk];
+            }
+        }
+
+        input.resize(n - n_kernel_padding_thk * 2);
+        for (int i = 0; i < n - n_kernel_padding_thk * 2; i++) {
+            input[i].resize(m - m_kernel_padding_thk * 2);
+        }
+    }
+    else throw invalid_argument("Invalid mode");
+
+    return;
+}
+
 
 PYBIND11_MODULE(fft, m) {
     m.doc() = "Fast Fourier Transform"; // optional module docstring
@@ -211,6 +251,6 @@ PYBIND11_MODULE(fft, m) {
     m.def("ifft2d", &ifft2d, "Inverse Fast Fourier Transform for 2D signal.",
         py::arg("input"), py::arg("method")="mixed_radix");
     m.def("fftconvolve2d", &fftconvolve2d, "2D convolution using FFT.",
-        py::arg("input"), py::arg("kernel"), py::arg("method")="mixed_radix");
+        py::arg("input"), py::arg("kernel"), py::arg("method")="mixed_radix", py::arg("mode")="full");
     m.def("paddingInput", &paddingInput, "Padding zero at the surrounding of the input until the size of input is n x m.");
 }
