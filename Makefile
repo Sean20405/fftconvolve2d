@@ -6,7 +6,7 @@ OUTPUT := fft$(shell python3-config --extension-suffix)
 
 .PHONY: default
 default: $(OUTPUT)
-$(OUTPUT): src/fft.cpp src/fft.hpp pocketfft.o src/fft_impl.hpp src/fft_impl.cpp
+$(OUTPUT): src/*.cpp src/*.hpp pocketfft.o
 	$(CXX) $(CXX_FLAGS) $(INCLUDE_FLAGS) $^ -o $(OUTPUT) $(LD_FLAGS)
 	rm -f pocketfft.o
 
