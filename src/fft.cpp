@@ -11,26 +11,26 @@ namespace py = pybind11;
 // Choose which FFT implementation to use
 vector<Complex> fft1d(vector<Complex> &input, string method) {
     if (method == "mixed_radix") return MixedRadixFFT::fft1d(input);
-    else if (method == "cooley_tukey") return CooleyTukeyFFT::fft1d(input); 
+    else if (method == "cooley_tukey") return CooleyTukeyFFT_MP::fft1d(input); 
     else throw invalid_argument("Invalid method");
 }
 
 vector<Complex> ifft1d(vector<Complex> &input, string method) {
     if (method == "mixed_radix") return MixedRadixFFT::ifft1d(input);
-    else if (method == "cooley_tukey") return CooleyTukeyFFT::ifft1d(input); 
+    else if (method == "cooley_tukey") return CooleyTukeyFFT_MP::ifft1d(input); 
     else throw invalid_argument("Invalid method");
 
 }
 
 vector<vector<Complex>> fft2d(vector<vector<Complex>> &input, string method) {
     if (method == "mixed_radix") return MixedRadixFFT::fft2d(input);
-    else if (method == "cooley_tukey") return CooleyTukeyFFT::fft2d(input); 
+    else if (method == "cooley_tukey") return CooleyTukeyFFT_MP::fft2d(input); 
     else throw invalid_argument("Invalid method");
 
 }
 vector<vector<Complex>> ifft2d(vector<vector<Complex>> &input, string method) {
     if (method == "mixed_radix") return MixedRadixFFT::ifft2d(input);
-    else if (method == "cooley_tukey") return CooleyTukeyFFT::ifft2d(input); 
+    else if (method == "cooley_tukey") return CooleyTukeyFFT_MP::ifft2d(input); 
     else throw invalid_argument("Invalid method");
 
 }

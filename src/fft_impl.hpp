@@ -3,6 +3,7 @@
 # include <iostream>
 # include <vector>
 # include <complex>
+# include <omp.h>
 # include <sys/time.h>
 
 extern "C" {
@@ -13,6 +14,15 @@ typedef std::complex<double> Complex;
 using namespace std;
 
 class CooleyTukeyFFT {
+public:
+    static vector<Complex> fft1d(vector<Complex> &input);
+    static vector<Complex> ifft1d(vector<Complex> &input, bool root=true);
+    static vector<vector<Complex>> fft2d(vector<vector<Complex>> &input);
+    static vector<vector<Complex>> ifft2d(vector<vector<Complex>> &input);
+    static vector<int> fast_size;
+};
+
+class CooleyTukeyFFT_MP {
 public:
     static vector<Complex> fft1d(vector<Complex> &input);
     static vector<Complex> ifft1d(vector<Complex> &input, bool root=true);
