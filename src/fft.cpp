@@ -46,7 +46,7 @@ vector<vector<double>> fftconvolve2d(vector<vector<double>> &input, vector<vecto
     cout << "Preprocessing the image and kernel" << endl;
     cout << "    Padding to faster size";
     gettimeofday(&start2, 0);
-    std::tie(n_fast, m_fast) = paddingInput(input, n + n_kernel, m + m_kernel, method);
+    std::tie(n_fast, m_fast) = paddingInput(input, n + n_kernel - 1, m + m_kernel - 1, method);
     gettimeofday(&end2, 0);
     cout << "    > " << (end2.tv_sec - start2.tv_sec) + (end2.tv_usec - start2.tv_usec) / 1e6 << "s" << endl;
 
