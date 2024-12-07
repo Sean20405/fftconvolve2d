@@ -70,8 +70,14 @@ vector<vector<double>> fftconvolve2d(vector<vector<double>> &input, vector<vecto
     // Compute FFT for input and kernel
     cout << "Computing FFT for input and kernel" << endl;
     gettimeofday(&start, 0);
+    gettimeofday(&start2, 0);
     vector<vector<Complex>> input_fft = fft2d(input_complex, method);
+    gettimeofday(&end2, 0);
+    cout << "    FFT for input - " << (end2.tv_sec - start2.tv_sec) + (end2.tv_usec - start2.tv_usec) / 1e6 << "s" << endl;
+    gettimeofday(&start2, 0);
     vector<vector<Complex>> kernel_fft = fft2d(kernel_complex, method);
+    gettimeofday(&end2, 0);
+    cout << "    FFT for kernel - " << (end2.tv_sec - start2.tv_sec) + (end2.tv_usec - start2.tv_usec) / 1e6 << "s" << endl;
     gettimeofday(&end, 0);
     cout << " > " << (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1e6 << "s" << endl;
 

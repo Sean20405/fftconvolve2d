@@ -227,13 +227,13 @@ vector<vector<Complex>> CooleyTukeyFFT_MP::ifft2d(vector<vector<Complex>> &input
     vector<vector<Complex>> result(n, vector<Complex>(m));
 
     // FFT for each row
-    #pragma omp simd    
+    #pragma omp parallel for  
     for (int i = 0; i < n; i++) {
         result[i] = ifft1d(input[i]);
     }
 
     // FFT for each column
-    #pragma omp simd    
+    #pragma omp parallel for
     for (int i = 0; i < m; i++) {
         vector<Complex> column(n);
         for (int j = 0; j < n; j++) {
