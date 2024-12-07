@@ -3,7 +3,7 @@
 void paddingKernel(vector<vector<double>> &kernel, int n, int m) {
     int n_kernel = kernel.size();
     
-    for (int i=0; i<n_kernel; i++) kernel[i].resize(m, 0);
+    for (int i=0; i<n_kernel; ++i) kernel[i].resize(m, 0);
     kernel.resize(n, vector<double>(m, 0));
     
     return;
@@ -12,8 +12,8 @@ void paddingKernel(vector<vector<double>> &kernel, int n, int m) {
 vector<vector<double>> roll2d(vector<vector<double>> &input, int shift_x, int shift_y) {
     int n = input.size(), m = input[0].size();
     vector<vector<double>> result(n, vector<double>(m));
-    for (int i = 0; i < n; i++) {
-        for (int j = 0; j < m; j++) {
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < m; ++j) {
             result[(i + shift_x + n) % n][(j + shift_y + m) % m] = input[i][j];
         }
     }
@@ -66,8 +66,8 @@ void cropOutput(vector<vector<double>> &input, int n, int m, int n_kernel, int m
     int n_fast_padding_thk = (n_fast - (n + n_kernel_padding_thk * 2)) / 2, m_fast_padding_thk = (m_fast - (m + m_kernel_padding_thk * 2)) / 2;  // Padding thickness for fast size
     
     // Recover from padding to fast size
-    for (int i = 0; i < n + n_kernel_padding_thk * 2; i++) {
-        for (int j = 0; j < m + m_kernel_padding_thk * 2; j++) {
+    for (int i = 0; i < n + n_kernel_padding_thk * 2; ++i) {
+        for (int j = 0; j < m + m_kernel_padding_thk * 2; ++j) {
             input[i][j] = input[i + n_fast_padding_thk][j + m_fast_padding_thk];
         }
     }
@@ -75,31 +75,31 @@ void cropOutput(vector<vector<double>> &input, int n, int m, int n_kernel, int m
     // Crop image
     if (mode == "full") {
         input.resize(n + n_kernel_padding_thk * 2);
-        for (int i = 0; i < n + n_kernel_padding_thk * 2; i++) {
+        for (int i = 0; i < n + n_kernel_padding_thk * 2; ++i) {
             input[i].resize(m + m_kernel_padding_thk * 2);
         }
     }
     else if (mode == "same") {
-        for (int i = 0; i < n; i++) {
-            for (int j = 0; j < m; j++) {
+        for (int i = 0; i < n; ++i) {
+            for (int j = 0; j < m; ++j) {
                 input[i][j] = input[i + n_kernel_padding_thk][j + m_kernel_padding_thk];
             }
         }
 
         input.resize(n);
-        for (int i = 0; i < n; i++) {
+        for (int i = 0; i < n; ++i) {
             input[i].resize(m);
         }
     }
     else if (mode == "valid") {
-        for (int i = 0; i < n - n_kernel_padding_thk * 2; i++) {
-            for (int j = 0; j < m - m_kernel_padding_thk * 2; j++) {
+        for (int i = 0; i < n - n_kernel_padding_thk * 2; ++i) {
+            for (int j = 0; j < m - m_kernel_padding_thk * 2; ++j) {
                 input[i][j] = input[i + 2 * n_kernel_padding_thk][j + 2 * m_kernel_padding_thk];
             }
         }
 
         input.resize(n - n_kernel_padding_thk * 2);
-        for (int i = 0; i < n - n_kernel_padding_thk * 2; i++) {
+        for (int i = 0; i < n - n_kernel_padding_thk * 2; ++i) {
             input[i].resize(m - m_kernel_padding_thk * 2);
         }
     }

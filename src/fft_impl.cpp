@@ -10,7 +10,7 @@ vector<Complex> CooleyTukeyFFT::fft1d(vector<Complex> &input) {
 
     // Divide into even and odd function
     vector<Complex> even(n / 2), odd(n / 2);
-    for (int i = 0; i < n / 2; i++) {
+    for (int i = 0; i < n / 2; ++i) {
         even[i] = input[i * 2];
         odd[i] = input[i * 2 + 1];
     }
@@ -24,7 +24,7 @@ vector<Complex> CooleyTukeyFFT::fft1d(vector<Complex> &input) {
     double angle = -2 * M_PI / n;
     Complex omega(1, 0), omega_n(cos(angle), sin(angle));
 
-    for (int i = 0; i < n / 2; i++) {
+    for (int i = 0; i < n / 2; ++i) {
         result[i] = even_result[i] + omega * odd_result[i];
         result[i + n / 2] = even_result[i] - omega * odd_result[i];
         omega *= omega_n;
@@ -41,7 +41,7 @@ vector<Complex> CooleyTukeyFFT::ifft1d(vector<Complex> &input, bool root) {
 
     // Divide into even and odd function
     vector<Complex> even(n / 2), odd(n / 2);
-    for (int i = 0; i < n / 2; i++) {
+    for (int i = 0; i < n / 2; ++i) {
         even[i] = input[i * 2];
         odd[i] = input[i * 2 + 1];
     }
@@ -55,14 +55,14 @@ vector<Complex> CooleyTukeyFFT::ifft1d(vector<Complex> &input, bool root) {
     double angle = 2 * M_PI / n;
     Complex omega(1, 0), omega_n(cos(angle), sin(angle));
 
-    for (int i = 0; i < n / 2; i++) {
+    for (int i = 0; i < n / 2; ++i) {
         result[i] = even_result[i] + omega * odd_result[i];
         result[i + n / 2] = even_result[i] - omega * odd_result[i];
         omega *= omega_n;
     }
 
     if (root) {
-        for (int i = 0; i < n; i++) {
+        for (int i = 0; i < n; ++i) {
             result[i] /= n;
         }
     }
@@ -78,18 +78,18 @@ vector<vector<Complex>> CooleyTukeyFFT::fft2d(vector<vector<Complex>> &input) {
     vector<vector<Complex>> result(n, vector<Complex>(m));
 
     // FFT for each row  TODO: bottleneck
-    for (int i = 0; i < n; i++) {
+    for (int i = 0; i < n; ++i) {
         result[i] = fft1d(input[i]);
     }
 
     // FFT for each column  TODO: bottleneck
-    for (int i = 0; i < m; i++) {
+    for (int i = 0; i < m; ++i) {
         vector<Complex> column(n);
-        for (int j = 0; j < n; j++) {
+        for (int j = 0; j < n; ++i) {
             column[j] = result[j][i];
         }
         column = fft1d(column);
-        for (int j = 0; j < n; j++) {
+        for (int j = 0; j < n; ++i) {
             result[j][i] = column[j];
         }
     }
@@ -103,18 +103,18 @@ vector<vector<Complex>> CooleyTukeyFFT::ifft2d(vector<vector<Complex>> &input) {
     vector<vector<Complex>> result(n, vector<Complex>(m));
 
     // FFT for each row
-    for (int i = 0; i < n; i++) {
+    for (int i = 0; i < n; ++i) {
         result[i] = ifft1d(input[i]);
     }
 
     // FFT for each column
-    for (int i = 0; i < m; i++) {
+    for (int i = 0; i < m; ++i) {
         vector<Complex> column(n);
-        for (int j = 0; j < n; j++) {
+        for (int j = 0; j < n; ++j) {
             column[j] = result[j][i];
         }
         column = ifft1d(column);
-        for (int j = 0; j < n; j++) {
+        for (int j = 0; j < n; ++i) {
             result[j][i] = column[j];
         }
     }
@@ -132,7 +132,7 @@ vector<Complex> CooleyTukeyFFT_MP::fft1d(vector<Complex> &input) {
 
     // Divide into even and odd function
     vector<Complex> even(n / 2), odd(n / 2);
-    for (int i = 0; i < n / 2; i++) {
+    for (int i = 0; i < n / 2; ++i) {
         even[i] = input[i * 2];
         odd[i] = input[i * 2 + 1];
     }
@@ -146,7 +146,7 @@ vector<Complex> CooleyTukeyFFT_MP::fft1d(vector<Complex> &input) {
     double angle = -2 * M_PI / n;
     Complex omega(1, 0), omega_n(cos(angle), sin(angle));
 
-    for (int i = 0; i < n / 2; i++) {
+    for (int i = 0; i < n / 2; ++i) {
         result[i] = even_result[i] + omega * odd_result[i];
         result[i + n / 2] = even_result[i] - omega * odd_result[i];
         omega *= omega_n;
@@ -163,7 +163,7 @@ vector<Complex> CooleyTukeyFFT_MP::ifft1d(vector<Complex> &input, bool root) {
 
     // Divide into even and odd function
     vector<Complex> even(n / 2), odd(n / 2);
-    for (int i = 0; i < n / 2; i++) {
+    for (int i = 0; i < n / 2; ++i) {
         even[i] = input[i * 2];
         odd[i] = input[i * 2 + 1];
     }
@@ -177,14 +177,14 @@ vector<Complex> CooleyTukeyFFT_MP::ifft1d(vector<Complex> &input, bool root) {
     double angle = 2 * M_PI / n;
     Complex omega(1, 0), omega_n(cos(angle), sin(angle));
 
-    for (int i = 0; i < n / 2; i++) {
+    for (int i = 0; i < n / 2; ++i) {
         result[i] = even_result[i] + omega * odd_result[i];
         result[i + n / 2] = even_result[i] - omega * odd_result[i];
         omega *= omega_n;
     }
 
     if (root) {
-        for (int i = 0; i < n; i++) {
+        for (int i = 0; i < n; ++i) {
             result[i] /= n;
         }
     }
@@ -201,19 +201,19 @@ vector<vector<Complex>> CooleyTukeyFFT_MP::fft2d(vector<vector<Complex>> &input)
 
     // FFT for each row  TODO: bottleneck
     #pragma omp parallel for
-    for (int i = 0; i < n; i++) {
+    for (int i = 0; i < n; ++i) {
         result[i] = fft1d(input[i]);
     }
 
     // FFT for each column  TODO: bottleneck
     #pragma omp parallel for
-    for (int i = 0; i < m; i++) {
+    for (int i = 0; i < m; ++i) {
         vector<Complex> column(n);
-        for (int j = 0; j < n; j++) {
+        for (int j = 0; j < n; ++j) {
             column[j] = result[j][i];
         }
         column = fft1d(column);
-        for (int j = 0; j < n; j++) {
+        for (int j = 0; j < n; ++j) {
             result[j][i] = column[j];
         }
     }
@@ -228,19 +228,19 @@ vector<vector<Complex>> CooleyTukeyFFT_MP::ifft2d(vector<vector<Complex>> &input
 
     // FFT for each row
     #pragma omp parallel for  
-    for (int i = 0; i < n; i++) {
+    for (int i = 0; i < n; ++i) {
         result[i] = ifft1d(input[i]);
     }
 
     // FFT for each column
     #pragma omp parallel for
-    for (int i = 0; i < m; i++) {
+    for (int i = 0; i < m; ++i) {
         vector<Complex> column(n);
-        for (int j = 0; j < n; j++) {
+        for (int j = 0; j < n; ++j) {
             column[j] = result[j][i];
         }
         column = ifft1d(column);
-        for (int j = 0; j < n; j++) {
+        for (int j = 0; j < n; ++j) {
             result[j][i] = column[j];
         }
     }
@@ -255,7 +255,7 @@ cfft_plan plan = make_cfft_plan(input.size());
 
     // Convert input to double array that can be used in pocketfft
     double *data = new double[2 * input.size()];
-    for (size_t i = 0; i < input.size(); i++) {
+    for (size_t i = 0; i < input.size(); ++i) {
         data[2 * i] = input[i].real();
         data[2 * i + 1] = input[i].imag();
     }
@@ -265,7 +265,7 @@ cfft_plan plan = make_cfft_plan(input.size());
 
     // Convert the result to Complex array
     vector<Complex> result(input.size());
-    for (size_t i = 0; i < input.size(); i++) {
+    for (size_t i = 0; i < input.size(); ++i) {
         result[i] = Complex(data[2 * i], data[2 * i + 1]);
     }
 
@@ -281,7 +281,7 @@ vector<Complex> MixedRadixFFT::ifft1d(vector<Complex> &input) {
 
     // Convert input to double array that can be used in pocketfft
     double *data = new double[2 * input.size()];
-    for (size_t i = 0; i < input.size(); i++) {
+    for (size_t i = 0; i < input.size(); ++i) {
         data[2 * i] = input[i].real();
         data[2 * i + 1] = input[i].imag();
     }
@@ -291,7 +291,7 @@ vector<Complex> MixedRadixFFT::ifft1d(vector<Complex> &input) {
 
     // Convert the result to Complex array
     vector<Complex> result(input.size());
-    for (size_t i = 0; i < input.size(); i++) {
+    for (size_t i = 0; i < input.size(); ++i) {
         result[i] = Complex(data[2 * i], data[2 * i + 1]);
     }
 
@@ -312,7 +312,7 @@ vector<vector<Complex>> MixedRadixFFT::fft2d(vector<vector<Complex>> &input) {
     // FFT for each row  TODO: bottleneck
     cout << "    FFT for each row";
     gettimeofday(&start, 0);
-    for (int i = 0; i < n; i++) {
+    for (int i = 0; i < n; ++i) {
         result[i] = fft1d(input[i]);
     }
     gettimeofday(&end, 0);
@@ -322,12 +322,12 @@ vector<vector<Complex>> MixedRadixFFT::fft2d(vector<vector<Complex>> &input) {
     cout << "    FFT for each column";
     vector<Complex> column(n);
     gettimeofday(&start, 0);
-    for (int i = 0; i < m; i++) {
-        for (int j = 0; j < n; j++) {
+    for (int i = 0; i < m; ++i) {
+        for (int j = 0; j < n; ++j) {
             column[j] = result[j][i];
         }
         column = fft1d(column);
-        for (int j = 0; j < n; j++) {
+        for (int j = 0; j < n; ++j) {
             result[j][i] = column[j];
         }
     }
@@ -346,7 +346,7 @@ vector<vector<Complex>> MixedRadixFFT::ifft2d(vector<vector<Complex>> &input) {
     struct timeval start, end;
     cout << "    IFFT for each row";
     gettimeofday(&start, 0);
-    for (int i = 0; i < n; i++) {
+    for (int i = 0; i < n; ++i) {
         result[i] = ifft1d(input[i]);
     }
     gettimeofday(&end, 0);
@@ -356,12 +356,12 @@ vector<vector<Complex>> MixedRadixFFT::ifft2d(vector<vector<Complex>> &input) {
     cout << "    IFFT for each column";
     vector<Complex> column(n);
     gettimeofday(&start, 0);
-    for (int i = 0; i < m; i++) {
-        for (int j = 0; j < n; j++) {
+    for (int i = 0; i < m; ++i) {
+        for (int j = 0; j < n; ++j) {
             column[j] = result[j][i];
         }
         column = ifft1d(column);
-        for (int j = 0; j < n; j++) {
+        for (int j = 0; j < n; ++j) {
             result[j][i] = column[j];
         }
     }

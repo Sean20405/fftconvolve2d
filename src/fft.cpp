@@ -60,8 +60,8 @@ vector<vector<double>> fftconvolve2d(vector<vector<double>> &input, vector<vecto
     // Represent input and kernel as complex number
     vector<vector<Complex>> input_complex(n_fast, vector<Complex>(m_fast));
     vector<vector<Complex>> kernel_complex(n_fast, vector<Complex>(m_fast));
-    for (int i = 0; i < n_fast; i++) {
-        for (int j = 0; j < m_fast; j++) {
+    for (int i = 0; i < n_fast; ++i) {
+        for (int j = 0; j < m_fast; ++j) {
             input_complex[i][j] = input[i][j];
             kernel_complex[i][j] = kernel[i][j];
         }
@@ -85,8 +85,8 @@ vector<vector<double>> fftconvolve2d(vector<vector<double>> &input, vector<vecto
     cout << "Computing the convolution in frequency domain";
     gettimeofday(&start, 0);
     vector<vector<Complex>> result(n_fast, vector<Complex>(m_fast));
-    for (int i = 0; i < n_fast; i++) {
-        for (int j = 0; j < m_fast; j++) {
+    for (int i = 0; i < n_fast; ++i) {
+        for (int j = 0; j < m_fast; ++j) {
             result[i][j] = input_fft[i][j] * kernel_fft[i][j];
         }
     }
@@ -104,8 +104,8 @@ vector<vector<double>> fftconvolve2d(vector<vector<double>> &input, vector<vecto
     cout << "Calculating the magnitude of the result";
     gettimeofday(&start, 0);
     vector<vector<double>> result_magnitude(n_fast, vector<double>(m_fast));
-    for (int i = 0; i < n_fast; i++) {
-        for (int j = 0; j < m_fast; j++) {
+    for (int i = 0; i < n_fast; ++i) {
+        for (int j = 0; j < m_fast; ++j) {
             result_magnitude[i][j] = abs(result_complex[i][j]);
         }
     }
