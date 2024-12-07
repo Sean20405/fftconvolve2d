@@ -46,27 +46,16 @@ pair<int, int> paddingInput(vector<vector<double>> &input, int n, int m, string 
 
     // Padding rows  TODO: bottleneck
     gettimeofday(&start, 0);
-    for (int i=0; i<n_input; i++) {
-        input[i].resize(m_fast);
-        for (int j=0; j<m_padding_size; j++) {
-            input[i].insert(input[i].begin(), 0);
-            input[i].push_back(0);
+    vector<vector<double>> padded_matrix(n_fast, vector<double>(m_fast, 0.0));
+    for (int i=0; i<n_input; ++i) {
+        for (int j=0; j<m_input; ++j) {
+            padded_matrix[n_padding_size + i][m_padding_size + j] = input[i][j];
         }
     }
+    input = padded_matrix;
     gettimeofday(&end, 0);
     cout << "        Padding rows - " << (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1e6 << "s" << endl;
-
-    // Padding columns
-    gettimeofday(&start, 0);
-    input.resize(n_fast, vector<double>(m_fast));
-    for (int i=0; i<n_padding_size; i++) {
-        vector<double> padding(m_fast, 0);
-        input.insert(input.begin(), padding);
-        input.push_back(padding);
-    }
-    gettimeofday(&end, 0);
-    cout << "        Padding columns - " << (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1e6 << "s" << endl;
-    cout << "        Padding to size " << n_fast << "x" << m_fast << endl;
+    cout << "        Original Size: " << n_input << "x" << m_input << " , Padding to size " << n_fast << "x" << m_fast << endl;
 
     return make_pair(n_fast, m_fast);
 }
