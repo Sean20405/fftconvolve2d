@@ -1,3 +1,5 @@
+Algo.: Cooley-Tukey (w/ parallelization)
+
 image size      kernel size     fft             scipy           scipy fft       speedup        
 256x256         15x15           0.068023        0.019667        0.004703        0.289126       
 256x256         17x17           0.043057        0.028320        0.001222        0.657720       
