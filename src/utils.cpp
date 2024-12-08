@@ -44,7 +44,7 @@ pair<int, int> paddingInput(vector<vector<double>> &input, int n, int m, string 
 
     n_padding_size = (n_fast - n_input) / 2, m_padding_size = (m_fast - m_input) / 2;
 
-    // Padding rows  TODO: bottleneck
+    // Padding rows
     gettimeofday(&start, 0);
     vector<vector<double>> padded_matrix(n_fast, vector<double>(m_fast, 0.0));
     for (int i=0; i<n_input; ++i) {

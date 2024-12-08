@@ -124,66 +124,75 @@ vector<vector<Complex>> CooleyTukeyFFT::ifft2d(vector<vector<Complex>> &input) {
 
 vector<int> CooleyTukeyFFT_MP::fast_size = {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192};
 
-vector<Complex> CooleyTukeyFFT_MP::fft1d(vector<Complex> &input) {
-    int n = input.size();
+double t_divide = 0, t_fft = 0, t_merge = 0;
+
+vector<Complex> CooleyTukeyFFT_MP::fft1d(vector<Complex> &input, int n_init) {
+    int n = input.size(), half_n = n / 2, order = n_init / n, i;
     if (n == 1) {
         return input;
     }
 
     // Divide into even and odd function
-    vector<Complex> even(n / 2), odd(n / 2);
-    for (int i = 0; i < n / 2; ++i) {
+    vector<Complex> even(half_n), odd(half_n);
+    // #pragma omp for simd
+    for (i = 0; i < half_n; ++i) {
         even[i] = input[i * 2];
         odd[i] = input[i * 2 + 1];
     }
-    
+
     // Recursively compute FFT
-    vector<Complex> even_result = fft1d(even);
-    vector<Complex> odd_result = fft1d(odd);
+    vector<Complex> even_result = fft1d(even, n_init);
+    vector<Complex> odd_result = fft1d(odd, n_init);
 
     // Merge
     vector<Complex> result(n);
-    double angle = -2 * M_PI / n;
-    Complex omega(1, 0), omega_n(cos(angle), sin(angle));
+    Complex omega_odd;
 
-    for (int i = 0; i < n / 2; ++i) {
-        result[i] = even_result[i] + omega * odd_result[i];
-        result[i + n / 2] = even_result[i] - omega * odd_result[i];
-        omega *= omega_n;
+    result[0] = even_result[0] + odd_result[0];
+    result[half_n] = even_result[0] - odd_result[0];
+    
+    // #pragma omp for simd
+    for (i = 1; i < half_n; ++i) {
+        omega_odd = twiddle[i * order] * odd_result[i];
+        result[i] = even_result[i] + omega_odd;
+        result[i + half_n] = even_result[i] - omega_odd;
     }
 
     return result;
 }
 
-vector<Complex> CooleyTukeyFFT_MP::ifft1d(vector<Complex> &input, bool root) {
-    int n = input.size();
+vector<Complex> CooleyTukeyFFT_MP::ifft1d(vector<Complex> &input, int n_init, bool root) {
+    int n = input.size(), half_n = n / 2, order = n_init / n, i;
     if (n == 1) {
         return input;
     }
 
     // Divide into even and odd function
-    vector<Complex> even(n / 2), odd(n / 2);
-    for (int i = 0; i < n / 2; ++i) {
+    vector<Complex> even(half_n), odd(half_n);
+    for (i = 0; i < half_n; ++i) {
         even[i] = input[i * 2];
         odd[i] = input[i * 2 + 1];
     }
 
     // Recursively compute FFT
-    vector<Complex> even_result = ifft1d(even, false);
-    vector<Complex> odd_result = ifft1d(odd, false);
+    vector<Complex> even_result = ifft1d(even, n_init, false);
+    vector<Complex> odd_result = ifft1d(odd, n_init, false);
 
     // Merge
     vector<Complex> result(n);
-    double angle = 2 * M_PI / n;
-    Complex omega(1, 0), omega_n(cos(angle), sin(angle));
+    Complex omega_odd;
 
-    for (int i = 0; i < n / 2; ++i) {
-        result[i] = even_result[i] + omega * odd_result[i];
-        result[i + n / 2] = even_result[i] - omega * odd_result[i];
-        omega *= omega_n;
+    result[0] = even_result[0] + odd_result[0];
+    result[half_n] = even_result[0] - odd_result[0];
+
+    for (i = 1; i < half_n; ++i) {
+        omega_odd = twiddle[n_init - i * order] * odd_result[i];
+        result[i] = even_result[i] + omega_odd;
+        result[i + half_n] = even_result[i] - omega_odd;
     }
 
     if (root) {
+        #pragma omp simd
         for (int i = 0; i < n; ++i) {
             result[i] /= n;
         }
@@ -191,6 +200,8 @@ vector<Complex> CooleyTukeyFFT_MP::ifft1d(vector<Complex> &input, bool root) {
 
     return result;
 }
+
+vector<Complex> twiddle; 
 
 // 2D FFT
 vector<vector<Complex>> CooleyTukeyFFT_MP::fft2d(vector<vector<Complex>> &input) {
@@ -200,19 +211,39 @@ vector<vector<Complex>> CooleyTukeyFFT_MP::fft2d(vector<vector<Complex>> &input)
     vector<vector<Complex>> result(n, vector<Complex>(m));
 
     // FFT for each row  TODO: bottleneck
+    // Precompute twiddle factors
+    if (twiddle.size() < (size_t)m) twiddle.resize(m);
+    double angle = -2 * M_PI / m;
+    Complex omega(cos(angle), sin(angle));
+    twiddle[0] = Complex(1, 0);
+    for (int i = 1; i < m; ++i) {
+        twiddle[i] = twiddle[i - 1] * omega;
+    }
+
     #pragma omp parallel for
     for (int i = 0; i < n; ++i) {
-        result[i] = fft1d(input[i]);
+        result[i] = fft1d(input[i], m);
     }
 
     // FFT for each column  TODO: bottleneck
+    // Precompute twiddle factors
+    if (twiddle.size() < (size_t)n) twiddle.resize(n);
+    angle = -2 * M_PI / n;
+    omega = Complex(cos(angle), sin(angle));
+    twiddle[0] = Complex(1, 0);
+    for (int i = 1; i < n; ++i) {
+        twiddle[i] = twiddle[i - 1] * omega;
+    }
+
     #pragma omp parallel for
     for (int i = 0; i < m; ++i) {
         vector<Complex> column(n);
+        #pragma omp simd
         for (int j = 0; j < n; ++j) {
             column[j] = result[j][i];
         }
-        column = fft1d(column);
+        column = fft1d(column, n);
+        #pragma omp simd
         for (int j = 0; j < n; ++j) {
             result[j][i] = column[j];
         }
@@ -227,19 +258,37 @@ vector<vector<Complex>> CooleyTukeyFFT_MP::ifft2d(vector<vector<Complex>> &input
     vector<vector<Complex>> result(n, vector<Complex>(m));
 
     // FFT for each row
+    // Precompute twiddle factors
+    if (twiddle.size() < (size_t)m) twiddle.resize(m);
+    double angle = -2 * M_PI / m;
+    Complex omega(cos(angle), sin(angle));
+    twiddle[0] = Complex(1, 0);
+    for (int i = 1; i < m; ++i) {
+        twiddle[i] = twiddle[i - 1] * omega;
+    }
+
     #pragma omp parallel for  
     for (int i = 0; i < n; ++i) {
-        result[i] = ifft1d(input[i]);
+        result[i] = ifft1d(input[i], m);
     }
 
     // FFT for each column
+    // Precompute twiddle factors
+    if (twiddle.size() < (size_t)n) twiddle.resize(n);
+    angle = -2 * M_PI / n;
+    omega = Complex(cos(angle), sin(angle));
+    twiddle[0] = Complex(1, 0);
+    for (int i = 1; i < n; ++i) {
+        twiddle[i] = twiddle[i - 1] * omega;
+    }
+
     #pragma omp parallel for
     for (int i = 0; i < m; ++i) {
         vector<Complex> column(n);
         for (int j = 0; j < n; ++j) {
             column[j] = result[j][i];
         }
-        column = ifft1d(column);
+        column = ifft1d(column, n);
         for (int j = 0; j < n; ++j) {
             result[j][i] = column[j];
         }

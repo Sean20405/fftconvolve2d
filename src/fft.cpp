@@ -11,13 +11,13 @@ namespace py = pybind11;
 // Choose which FFT implementation to use
 vector<Complex> fft1d(vector<Complex> &input, string method) {
     if (method == "mixed_radix") return MixedRadixFFT::fft1d(input);
-    else if (method == "cooley_tukey") return CooleyTukeyFFT_MP::fft1d(input); 
+    else if (method == "cooley_tukey") return CooleyTukeyFFT_MP::fft1d(input, input.size()); 
     else throw invalid_argument("Invalid method");
 }
 
 vector<Complex> ifft1d(vector<Complex> &input, string method) {
     if (method == "mixed_radix") return MixedRadixFFT::ifft1d(input);
-    else if (method == "cooley_tukey") return CooleyTukeyFFT_MP::ifft1d(input); 
+    else if (method == "cooley_tukey") return CooleyTukeyFFT_MP::ifft1d(input, input.size()); 
     else throw invalid_argument("Invalid method");
 
 }
