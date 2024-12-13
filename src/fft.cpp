@@ -3,31 +3,55 @@
 
 namespace py = pybind11;
 
-// Choose which FFT implementation to use
-vector<Complex> fft1d(vector<Complex> &input, string method) {
-    if (method == "mixed_radix") return MixedRadixFFT::fft1d(input);
-    else if (method == "cooley_tukey") return CooleyTukeyFFT_MP::fft1d(input, input.size()); 
-    else throw invalid_argument("Invalid method");
-}
-
-vector<Complex> ifft1d(vector<Complex> &input, string method) {
-    if (method == "mixed_radix") return MixedRadixFFT::ifft1d(input);
-    else if (method == "cooley_tukey") return CooleyTukeyFFT_MP::ifft1d(input, input.size()); 
-    else throw invalid_argument("Invalid method");
-
-}
-
 vector<vector<Complex>> fft2d(vector<vector<Complex>> &input, string method) {
-    if (method == "mixed_radix") return MixedRadixFFT::fft2d(input);
-    else if (method == "cooley_tukey") return CooleyTukeyFFT_MP::fft2d(input); 
-    else throw invalid_argument("Invalid method");
+    if (method == "mixed_radix") {
+        // Check if the size is valid
+        int n = input.size(), m = input[0].size();
+        if (lower_bound(MixedRadixFFT::fast_size.begin(), MixedRadixFFT::fast_size.end(), n) == MixedRadixFFT::fast_size.end() ||
+            lower_bound(MixedRadixFFT::fast_size.begin(), MixedRadixFFT::fast_size.end(), m) == MixedRadixFFT::fast_size.end()) {
+            throw invalid_argument("Invalid size");
+        }
 
+        return MixedRadixFFT::fft2d(input);
+    }
+
+    else if (method == "cooley_tukey") {
+        // Check if the size is valid
+        if (lower_bound(CooleyTukeyFFT_MP::fast_size.begin(), CooleyTukeyFFT_MP::fast_size.end(), input.size()) == CooleyTukeyFFT_MP::fast_size.end() ||
+            lower_bound(CooleyTukeyFFT_MP::fast_size.begin(), CooleyTukeyFFT_MP::fast_size.end(), input[0].size()) == CooleyTukeyFFT_MP::fast_size.end()) {
+            throw invalid_argument("Invalid size");
+        }
+
+        return CooleyTukeyFFT_MP::fft2d(input); 
+    }
+
+    else throw invalid_argument("Invalid method");
 }
-vector<vector<Complex>> ifft2d(vector<vector<Complex>> &input, string method) {
-    if (method == "mixed_radix") return MixedRadixFFT::ifft2d(input);
-    else if (method == "cooley_tukey") return CooleyTukeyFFT_MP::ifft2d(input); 
-    else throw invalid_argument("Invalid method");
 
+
+vector<vector<Complex>> ifft2d(vector<vector<Complex>> &input, string method) {
+    if (method == "mixed_radix") {
+        // Check if the size is valid
+        int n = input.size(), m = input[0].size();
+        if (lower_bound(MixedRadixFFT::fast_size.begin(), MixedRadixFFT::fast_size.end(), n) == MixedRadixFFT::fast_size.end() ||
+            lower_bound(MixedRadixFFT::fast_size.begin(), MixedRadixFFT::fast_size.end(), m) == MixedRadixFFT::fast_size.end()) {
+            throw invalid_argument("Invalid size");
+        }
+
+        return MixedRadixFFT::ifft2d(input);
+    }
+
+    else if (method == "cooley_tukey") {
+        // Check if the size is valid
+        if (lower_bound(CooleyTukeyFFT_MP::fast_size.begin(), CooleyTukeyFFT_MP::fast_size.end(), input.size()) == CooleyTukeyFFT_MP::fast_size.end() ||
+            lower_bound(CooleyTukeyFFT_MP::fast_size.begin(), CooleyTukeyFFT_MP::fast_size.end(), input[0].size()) == CooleyTukeyFFT_MP::fast_size.end()) {
+            throw invalid_argument("Invalid size");
+        }
+
+        return CooleyTukeyFFT_MP::ifft2d(input); 
+    }
+
+    else throw invalid_argument("Invalid method");
 }
 
 py::array_t<double> fftconvolve2d(vector<vector<double>> &input, vector<vector<double>> &kernel, string method, string mode) {
@@ -133,10 +157,6 @@ py::array_t<double> fftconvolve2d(vector<vector<double>> &input, vector<vector<d
 PYBIND11_MODULE(fft, m) {
     m.doc() = "Fast Fourier Transform"; // optional module docstring
 
-    m.def("fft1d", &fft1d, "Fast Fourier Transform for 1D signal.",
-        py::arg("input"), py::arg("method")="mixed_radix");
-    m.def("ifft1d", &ifft1d, "Inverse Fast Fourier Transform for 1D signal.",
-        py::arg("input"), py::arg("method")="mixed_radix");
     m.def("fft2d", &fft2d, "Fast Fourier Transform for 2D signal.",
         py::arg("input"), py::arg("method")="mixed_radix");
     m.def("ifft2d", &ifft2d, "Inverse Fast Fourier Transform for 2D signal.",
