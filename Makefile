@@ -1,7 +1,7 @@
 CXX := g++
 INCLUDE_FLAGS := $(shell python3 -m pybind11 --includes) $(shell python3-config --includes)
 LD_FLAGS := $(shell python3-config --ldflags)
-CXX_FLAGS := -O3 -Wall -shared -fPIC -std=c++11 -fopenmp -mavx2 -fopt-info-vec-optimized
+CXX_FLAGS := -O3 -Wall -shared -fPIC -std=c++11 -fopenmp -mavx2
 OUTPUT := fft$(shell python3-config --extension-suffix)
 
 .PHONY: default

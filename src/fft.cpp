@@ -1,9 +1,4 @@
 # include "fft.hpp"
-# include <pybind11/pybind11.h>
-# include <pybind11/stl.h>
-# include <pybind11/operators.h>
-# include <pybind11/complex.h>
-
 # include <sys/time.h>
 
 namespace py = pybind11;
@@ -35,7 +30,7 @@ vector<vector<Complex>> ifft2d(vector<vector<Complex>> &input, string method) {
 
 }
 
-vector<vector<double>> fftconvolve2d(vector<vector<double>> &input, vector<vector<double>> &kernel, string method, string mode) {
+py::array_t<double> fftconvolve2d(vector<vector<double>> &input, vector<vector<double>> &kernel, string method, string mode) {
     struct timeval start, end, start2, end2;
 
     int n = input.size(), m = input[0].size();
@@ -117,9 +112,22 @@ vector<vector<double>> fftconvolve2d(vector<vector<double>> &input, vector<vecto
     gettimeofday(&start, 0);
     cropOutput(result_magnitude, n, m, n_kernel, m_kernel, n_fast, m_fast, mode);
     gettimeofday(&end, 0);
-    cout << " - " << (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1e6 << "s" << endl << endl;
+    cout << " - " << (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1e6 << "s" << endl;
 
-    return result_magnitude;
+    // Make the data contiguous
+    gettimeofday(&start, 0);
+    std::vector<double> flat_result;
+    for (const auto& row : result_magnitude) {
+        flat_result.insert(flat_result.end(), row.begin(), row.end());
+    }
+    gettimeofday(&end, 0);
+    cout << "Making the data contiguous - " << (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1e6 << "s" << endl << endl;
+
+    return py::array_t<double>(
+        {result_magnitude.size(), result_magnitude[0].size()},                 // shape
+        {result_magnitude.size() * sizeof(double), sizeof(double)},  // C-style contiguous strides for double
+        flat_result.data()                                 // the pointer to the data
+    );
 }
 
 PYBIND11_MODULE(fft, m) {

@@ -29,3 +29,21 @@ def test_mode():
         x_scipy = scipy.signal.convolve2d(x, kernel, mode=mode)
 
         assert np.array(x_fft) == pytest.approx(x_scipy)
+
+def test_array():
+    x_size = 32
+    kernel_size = 7
+
+    x = [[random.randint(0, 255) for _ in range(x_size)] for _ in range(x_size)]
+    kernel = [[random.uniform(0, 1) for _ in range(kernel_size)] for _ in range(kernel_size)]
+    x_np = np.array(x)
+    kernel_np = np.array(kernel)
+
+    x_fft = fft.fftconvolve2d(x, kernel, mode='same')
+    x_np_fft = fft.fftconvolve2d(x_np, kernel_np, mode='same')
+    x_scipy = scipy.signal.convolve2d(x_np, kernel_np, mode='same')
+
+    assert np.array(x_fft) == pytest.approx(x_scipy)
+    assert x_scipy == pytest.approx(x_np_fft)
+
+# test_array()
